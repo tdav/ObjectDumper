@@ -22,7 +22,14 @@ public class DumpOptions
         this.CustomInstanceFormatters = new CustomInstanceFormatters();
         this.TrimInitialVariableName = false;
         this.UseTypeFullName = false;
+        this.OnlyValues = false;
+        this.NullValue = "";
+        this.ForWeb = true;
     }
+
+    public bool OnlyValues { get;set; }
+    public bool ForWeb { get;set; }
+    public string NullValue { get;set; }
 
     public DumpStyle DumpStyle { get; set; }
 

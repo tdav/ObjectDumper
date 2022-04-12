@@ -9,9 +9,9 @@ namespace ObjectDumping.Internal
 {
     internal class ObjectDumperConsole : DumperBase
     {
-        public ObjectDumperConsole(DumpOptions dumpOptions) : base(dumpOptions)
-        {
-        }
+        public PropertyAndValue Current { get; private set; }
+
+        public ObjectDumperConsole(DumpOptions dumpOptions) : base(dumpOptions) { }
 
         public static string Dump(object element, DumpOptions dumpOptions = null)
         {
@@ -33,7 +33,12 @@ namespace ObjectDumping.Internal
 
             var type = o.GetType();
             var typeName = type.IsAnonymous() ? "AnonymousObject" : type.GetFormattedName(this.DumpOptions.UseTypeFullName);
-            this.Write($"{{{typeName}}}", intentLevel);
+
+            if (!this.DumpOptions.OnlyValues)
+            {
+                this.Write($"{{{typeName}}}", intentLevel);
+            }
+
             this.LineBreak();
             this.Level++;
 
@@ -77,11 +82,17 @@ namespace ObjectDumping.Internal
 
             foreach (var propertiesAndValue in propertiesAndValues)
             {
+                this.Current = propertiesAndValue;
+
                 var value = propertiesAndValue.Value;
 
                 if (this.AlreadyTouched(value))
                 {
-                    this.Write($"{propertiesAndValue.Property.Name}: ");
+                    if (!this.DumpOptions.OnlyValues)
+                    {
+                        this.Write($"{propertiesAndValue.Property.Name}: ");
+                    }
+
                     this.FormatValue(propertiesAndValue.DefaultValue);
                     this.Write(" --> Circular reference detected");
                     if (!Equals(propertiesAndValue, lastProperty))
@@ -109,7 +120,11 @@ namespace ObjectDumping.Internal
                 }
                 else
                 {
-                    this.Write($"{propertiesAndValue.Property.Name}: ");
+                    if (!this.DumpOptions.OnlyValues)
+                    {
+                        this.Write($"{propertiesAndValue.Property.Name}: ");
+                    }
+
                     this.FormatValue(value);
                     if (!Equals(propertiesAndValue, lastProperty))
                     {
@@ -147,7 +162,12 @@ namespace ObjectDumping.Internal
                 for (var arrayIndex = 0; arrayIndex < arrayValues.Count; arrayIndex++)
                 {
                     var arrayValue = arrayValues[arrayIndex];
-                    this.Write($"[{arrayIndex}]: ");
+
+                    if (!this.DumpOptions.OnlyValues)
+                    {
+                        this.Write($"[{arrayIndex}]: ");
+                    }
+
                     this.FormatValue(arrayValue);
                     if (!Equals(arrayValue, lastArrayValue))
                     {
@@ -172,7 +192,7 @@ namespace ObjectDumping.Internal
 
             if (o == null)
             {
-                this.Write("null", intentLevel);
+                this.Write(this.DumpOptions.NullValue, intentLevel);
                 return;
             }
 
@@ -185,14 +205,29 @@ namespace ObjectDumping.Internal
             if (o is string)
             {
                 var str = $@"{o}".Escape();
-                this.Write($"\"{str}\"", intentLevel);
+                if (this.DumpOptions.OnlyValues)
+                {
+                    this.Write(str, intentLevel);
+                }
+                else
+                {
+                    this.Write($"\"{str}\"", intentLevel);
+                }
                 return;
             }
 
             if (o is char)
             {
                 var c = o.ToString().Replace("\0", "").Trim();
-                this.Write($"\'{c}\'", intentLevel);
+
+                if (this.DumpOptions.OnlyValues)
+                {
+                    this.Write($"{c}", intentLevel);
+                }
+                else
+                {
+                    this.Write($"\'{c}\'", intentLevel);
+                }
                 return;
             }
 
@@ -204,33 +239,44 @@ namespace ObjectDumping.Internal
 
             if (o is short @short)
             {
-                if (@short == short.MinValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MinValue", intentLevel);
-                }
-                else if (@short == short.MaxValue)
-                {
-                    this.Write($"MaxValue", intentLevel);
+                    this.Write($"{@short}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@short.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@short == short.MinValue)
+                    {
+                        this.Write($"MinValue", intentLevel);
+                    }
+                    else if (@short == short.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@short.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
-
                 return;
             }
 
             if (o is ushort @ushort)
             {
-                // No special handling for MinValue
-
-                if (@ushort == ushort.MaxValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MaxValue", intentLevel);
+                    this.Write($"{@ushort}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@ushort.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@ushort == ushort.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@ushort.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
 
                 return;
@@ -238,17 +284,24 @@ namespace ObjectDumping.Internal
 
             if (o is int @int)
             {
-                if (@int == int.MinValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MinValue", intentLevel);
-                }
-                else if (@int == int.MaxValue)
-                {
-                    this.Write($"MaxValue", intentLevel);
+                    this.Write($"{@int}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@int.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@int == int.MinValue)
+                    {
+                        this.Write($"MinValue", intentLevel);
+                    }
+                    else if (@int == int.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@int.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
 
                 return;
@@ -256,33 +309,44 @@ namespace ObjectDumping.Internal
 
             if (o is uint @uint)
             {
-                // No special handling for MinValue
-
-                if (@uint == uint.MaxValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MaxValue", intentLevel);
+                    this.Write($"{@uint}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@uint.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@uint == uint.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@uint.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
-
                 return;
             }
 
             if (o is long @long)
             {
-                if (@long == long.MinValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MinValue", intentLevel);
-                }
-                else if (@long == long.MaxValue)
-                {
-                    this.Write($"MaxValue", intentLevel);
+                    this.Write($"{@long}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@long.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@long == long.MinValue)
+                    {
+                        this.Write($"MinValue", intentLevel);
+                    }
+                    else if (@long == long.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@long.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
 
                 return;
@@ -290,15 +354,20 @@ namespace ObjectDumping.Internal
 
             if (o is ulong @ulong)
             {
-                // No special handling for MinValue
-
-                if (@ulong == ulong.MaxValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MaxValue", intentLevel);
+                    this.Write($"{@ulong}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@ulong.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@ulong == ulong.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@ulong.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
 
                 return;
@@ -306,47 +375,60 @@ namespace ObjectDumping.Internal
 
             if (o is double @double)
             {
-                if (@double == double.MinValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MinValue", intentLevel);
-                }
-                else if (@double == double.MaxValue)
-                {
-                    this.Write($"MaxValue", intentLevel);
-                }
-                else if (double.IsNaN(@double))
-                {
-                    this.Write($"NaN", intentLevel);
-                }
-                else if (double.IsPositiveInfinity(@double))
-                {
-                    this.Write($"PositiveInfinity", intentLevel);
-                }
-                else if (double.IsNegativeInfinity(@double))
-                {
-                    this.Write($"NegativeInfinity", intentLevel);
+                    this.Write($"{@double}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@double.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@double == double.MinValue)
+                    {
+                        this.Write($"MinValue", intentLevel);
+                    }
+                    else if (@double == double.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else if (double.IsNaN(@double))
+                    {
+                        this.Write($"NaN", intentLevel);
+                    }
+                    else if (double.IsPositiveInfinity(@double))
+                    {
+                        this.Write($"PositiveInfinity", intentLevel);
+                    }
+                    else if (double.IsNegativeInfinity(@double))
+                    {
+                        this.Write($"NegativeInfinity", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@double.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
-
                 return;
             }
 
             if (o is decimal @decimal)
             {
-                if (@decimal == decimal.MinValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MinValue", intentLevel);
-                }
-                else if (@decimal == decimal.MaxValue)
-                {
-                    this.Write($"MaxValue", intentLevel);
+                    this.Write($"{@decimal}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@decimal.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@decimal == decimal.MinValue)
+                    {
+                        this.Write($"MinValue", intentLevel);
+                    }
+                    else if (@decimal == decimal.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@decimal.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
 
                 return;
@@ -354,17 +436,24 @@ namespace ObjectDumping.Internal
 
             if (o is float @float)
             {
-                if (@float == float.MinValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"MinValue", intentLevel);
-                }
-                else if (@float == float.MaxValue)
-                {
-                    this.Write($"MaxValue", intentLevel);
+                    this.Write($"{@float}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{@float.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    if (@float == float.MinValue)
+                    {
+                        this.Write($"MinValue", intentLevel);
+                    }
+                    else if (@float == float.MaxValue)
+                    {
+                        this.Write($"MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{@float.ToString(CultureInfo.InvariantCulture)}", intentLevel);
+                    }
                 }
 
                 return;
@@ -372,17 +461,33 @@ namespace ObjectDumping.Internal
 
             if (o is DateTime dateTime)
             {
-                if (dateTime == DateTime.MinValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"DateTime.MinValue", intentLevel);
-                }
-                else if (dateTime == DateTime.MaxValue)
-                {
-                    this.Write($"DateTime.MaxValue", intentLevel);
+                    if (this.DumpOptions.ForWeb)
+                    {
+                        this.Write($"{dateTime.ToString("yyyy.MM.dd")}T{dateTime.ToString("hh:mm:ss")}", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{dateTime}", intentLevel);
+                    }
                 }
                 else
                 {
-                    this.Write($"{dateTime}", intentLevel);
+                    if (dateTime == DateTime.MinValue)
+                    {
+                        this.Write($"DateTime.MinValue", intentLevel);
+                    }
+                    else if (dateTime == DateTime.MaxValue)
+                    {
+                        this.Write($"DateTime.MaxValue", intentLevel);
+                    }
+                    else
+                    {
+
+                        this.Write($"{dateTime}", intentLevel);
+
+                    }
                 }
 
                 return;
@@ -390,17 +495,24 @@ namespace ObjectDumping.Internal
 
             if (o is DateTimeOffset dateTimeOffset)
             {
-                if (dateTimeOffset == DateTimeOffset.MinValue)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"DateTimeOffset.MinValue", intentLevel);
-                }
-                else if (dateTimeOffset == DateTimeOffset.MaxValue)
-                {
-                    this.Write($"DateTimeOffset.MaxValue", intentLevel);
+                    this.Write($"{dateTimeOffset:O}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{dateTimeOffset:O}", intentLevel);
+                    if (dateTimeOffset == DateTimeOffset.MinValue)
+                    {
+                        this.Write($"DateTimeOffset.MinValue", intentLevel);
+                    }
+                    else if (dateTimeOffset == DateTimeOffset.MaxValue)
+                    {
+                        this.Write($"DateTimeOffset.MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{dateTimeOffset:O}", intentLevel);
+                    }
                 }
 
                 return;
@@ -408,21 +520,28 @@ namespace ObjectDumping.Internal
 
             if (o is TimeSpan timeSpan)
             {
-                if (timeSpan == TimeSpan.Zero)
+                if (this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"TimeSpan.Zero", intentLevel);
-                }
-                else if (timeSpan == TimeSpan.MinValue)
-                {
-                    this.Write($"TimeSpan.MinValue", intentLevel);
-                }
-                else if (timeSpan == TimeSpan.MaxValue)
-                {
-                    this.Write($"TimeSpan.MaxValue", intentLevel);
+                    this.Write($"{timeSpan:c}", intentLevel);
                 }
                 else
                 {
-                    this.Write($"{timeSpan:c}", intentLevel);
+                    if (timeSpan == TimeSpan.Zero)
+                    {
+                        this.Write($"TimeSpan.Zero", intentLevel);
+                    }
+                    else if (timeSpan == TimeSpan.MinValue)
+                    {
+                        this.Write($"TimeSpan.MinValue", intentLevel);
+                    }
+                    else if (timeSpan == TimeSpan.MaxValue)
+                    {
+                        this.Write($"TimeSpan.MaxValue", intentLevel);
+                    }
+                    else
+                    {
+                        this.Write($"{timeSpan:c}", intentLevel);
+                    }
                 }
 
                 return;
@@ -440,8 +559,18 @@ namespace ObjectDumping.Internal
             {
                 var enumFlags = $"{o}".Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 var enumTypeName = type.GetFormattedName(this.DumpOptions.UseTypeFullName);
-                // In case of multiple flags, we prefer short class name here
-                var enumValues = string.Join(" | ", enumFlags.Select(f => $"{(enumFlags.Length > 1 ? "" : $"{enumTypeName}.")}{f.Replace(" ", "")}"));
+                var enumValues = "";
+
+                if (!this.DumpOptions.OnlyValues)
+                {
+                    // In case of multiple flags, we prefer short class name here
+                    enumValues = string.Join(" | ", enumFlags.Select(f => $"{(enumFlags.Length > 1 ? "" : $"{enumTypeName}.")}{f.Replace(" ", "")}"));
+                }
+                else
+                {
+                    enumValues = string.Join(string.Empty, enumFlags.Select(f => $"{(enumFlags.Length > 1 ? "" : $"{enumTypeName}.")}{f.Replace(" ", "")}"));
+                }
+
                 this.Write($"{enumValues}", intentLevel);
                 return;
             }
@@ -477,11 +606,19 @@ namespace ObjectDumping.Internal
                 var kvpKey = type.GetRuntimeProperty(nameof(KeyValuePair<object, object>.Key)).GetValue(o, null);
                 var kvpValue = type.GetRuntimeProperty(nameof(KeyValuePair<object, object>.Value)).GetValue(o, null);
 
-                this.Write("{ ", intentLevel);
-                this.FormatValue(kvpKey);
-                this.Write(", ");
-                this.FormatValue(kvpValue);
-                this.Write(" }");
+                if (!this.DumpOptions.OnlyValues)
+                {
+                    this.Write("{ ", intentLevel);
+                    this.FormatValue(kvpKey);
+                    this.Write(", ");
+                    this.FormatValue(kvpValue);
+                    this.Write(" }");
+                }
+                else
+                {
+                    this.FormatValue(kvpValue);
+                }
+
                 return;
             }
 
@@ -495,10 +632,21 @@ namespace ObjectDumping.Internal
 
             if (o is IEnumerable enumerable)
             {
-                if (this.Level > 0)
+                if (!this.DumpOptions.OnlyValues)
                 {
-                    this.Write($"...", intentLevel);
-                    this.Level++;
+                    if (this.Level > 0)
+                    {
+                        this.Write($"...", intentLevel);
+                        this.Level++;
+                    }
+                }
+                else
+                {
+                    if (this.Level > 0)
+                    {
+                        this.Write("", intentLevel);
+                        this.Level++;
+                    }
                 }
 
                 this.WriteItems(enumerable);
@@ -508,23 +656,36 @@ namespace ObjectDumping.Internal
             this.CreateObject(o, intentLevel);
         }
 
+
+
 #if NETSTANDARD2_0_OR_GREATER
         protected void WriteValueTuple(object o, Type type)
         {
             var fields = type.GetFields().ToList();
             var last = fields.LastOrDefault();
 
-            this.Write("(");
-            foreach (var field in fields)
+            if (this.DumpOptions.OnlyValues)
             {
-                var fieldValue = field.GetValue(o);
-                this.FormatValue(fieldValue, 0);
-                if (!Equals(field, last))
+                foreach (var field in fields)
                 {
-                    this.Write(", ");
+                    var fieldValue = field.GetValue(o);
+                    this.FormatValue(fieldValue, 0);                    
                 }
             }
-            this.Write(")");
+            else
+            {
+                this.Write("(");
+                foreach (var field in fields)
+                {
+                    var fieldValue = field.GetValue(o);
+                    this.FormatValue(fieldValue, 0);
+                    if (!Equals(field, last))
+                    {
+                        this.Write(", ");
+                    }
+                }
+                this.Write(")");
+            }
         }
 #endif
 

@@ -1,3 +1,7 @@
+# Add DumpOptions.OnlyValues and DumpOptions.NullValue
+
+
+
 # ObjectDumper.NET
 [![Version](https://img.shields.io/nuget/v/ObjectDumper.NET.svg)](https://www.nuget.org/packages/ObjectDumper.NET)  [![Downloads](https://img.shields.io/nuget/dt/ObjectDumper.NET.svg)](https://www.nuget.org/packages/ObjectDumper.NET)
 
