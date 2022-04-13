@@ -3,7 +3,7 @@
 	<PropertyGroup>
 		<Description>ObjectDumper is a utility which aims to serialize C# objects to string for debugging and logging purposes.</Description>
 		<AssemblyTitle>ObjectDumper</AssemblyTitle>
-		<Version>2.0.5</Version>
+		<Version>2.0.10</Version>
 		<Authors>Thomas Galliker</Authors>
 		<TargetFrameworks>net45;netstandard1.2;netstandard2.0;netstandard2.1</TargetFrameworks>
 		<AssemblyName>ObjectDumping</AssemblyName>

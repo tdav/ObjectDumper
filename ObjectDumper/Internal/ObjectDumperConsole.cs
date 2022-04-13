@@ -465,7 +465,7 @@ namespace ObjectDumping.Internal
                 {
                     if (this.DumpOptions.ForWeb)
                     {
-                        this.Write($"{dateTime.ToString("yyyy.MM.dd")}T{dateTime.ToString("hh:mm:ss")}", intentLevel);
+                        this.Write($"{dateTime.ToString("yyyy.MM.dd")}T{dateTime.ToString("HH:mm:ss")}", intentLevel);
                     }
                     else
                     {
